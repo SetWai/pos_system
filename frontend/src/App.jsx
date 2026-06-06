@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Products from './pages/Products';
+import Checkout from './pages/Checkout';
 
 function App() {
   return (
@@ -20,8 +21,8 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<h2 style={{ padding: '20px' }}>Welcome to Dashboard</h2>} />
-            <Route path="/products" element={<Products />} /> {/* Map the /products URL to Products component */}
-            <Route path="/checkout" element={<h2 style={{ padding: '20px' }}>Checkout Page Coming Soon</h2>} />
+            <Route path="/products" element={<Products />} /> 
+            <Route path="/checkout" element={<Checkout />} />
           </Routes>
         </main>
       </div>
