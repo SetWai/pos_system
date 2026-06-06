@@ -6,7 +6,7 @@ import Checkout from './pages/Checkout';
 function App() {
   return (
     <Router>
-      <div style={{ fontFamily: 'Arial, sans-serif' }}>
+      <div style={{ fontFamily: 'Arial, sans-serif', backgroundColor: '#ffffff', color: '#000000', minHeight: '100vh' }}>
         {/* Navigation Bar */}
         <header style={{ background: '#333', color: 'white', padding: '10px 20px', display: 'flex', gap: '20px' }}>
           <h2 style={{ margin: 0 }}>POS System</h2>

@@ -94,6 +94,11 @@ const Checkout = () => {
       alert(`Order Successful! Receipt ID: ${response.data.id}`);
       // Clear the cart after successful checkout
       setCart([]);
+
+      // Re-fetch products to update the stock on the UI immediately
+      const productsResponse = await api.get('/products/');
+      setProducts(productsResponse.data);
+
     } catch (err) {
       console.error("Checkout error:", err);
       // Show backend error message if stock is insufficient
@@ -117,6 +122,7 @@ const Checkout = () => {
                 padding: '20px', 
                 cursor: product.stock_quantity > 0 ? 'pointer' : 'not-allowed',
                 backgroundColor: product.stock_quantity > 0 ? '#f0f8ff' : '#ffe4e1',
+                color: '#000000',
                 border: '1px solid #ccc',
                 borderRadius: '8px'
               }}
@@ -130,7 +136,7 @@ const Checkout = () => {
       </div>
 
       {/* RIGHT SIDE: Cart & Checkout Layout */}
-      <div style={{ flex: 1, backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '8px', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, backgroundColor: '#f9f9f9', color: '#000000', padding: '20px', borderRadius: '8px', display: 'flex', flexDirection: 'column' }}>
         <h2>Current Order</h2>
         
         {/* Cart Items List */}
