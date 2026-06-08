@@ -31,6 +31,9 @@ class DiscountViewSet(viewsets.ModelViewSet):
     queryset = Discount.objects.all()
     serializer_class = DiscountSerializer
 
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
 
 # 2. COMPLEX LOGIC (Function-Based Views - FBV)
 # Using FBV for checkout because we need to calculate totals and deduct stock

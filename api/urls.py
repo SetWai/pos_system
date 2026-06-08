@@ -9,6 +9,7 @@ router.register(r'products', views.ProductViewSet)
 router.register(r'customers', views.CustomerViewSet)
 router.register(r'taxes', views.TaxViewSet)
 router.register(r'discounts', views.DiscountViewSet)
+router.register(r'orders', views.OrderViewSet)
 
 urlpatterns = [
     # Include all generated routes from the router

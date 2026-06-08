@@ -18,7 +18,7 @@ function App() {
 
   return (
     <Router>
-      <div style={{ fontFamily: 'Arial, sans-serif', backgroundColor: '#ffffff', color: '#000000', minHeight: '100vh' }}>
+      <div style={{ minHeight: '100vh' }}>
         <header style={{ background: '#333', color: 'white', padding: '10px 20px', display: 'flex', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
             <h2 style={{ margin: 0 }}>Supermarket POS</h2>
