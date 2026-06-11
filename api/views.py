@@ -1,12 +1,14 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from django.db import transaction # For database transaction safety
+from django.db import transaction 
+from rest_framework.permissions import IsAuthenticated
 from .models import Category, Product, Customer, Tax, Discount, Order, OrderItem
 from .serializers import (
     CategorySerializer, ProductSerializer, CustomerSerializer,
     TaxSerializer, DiscountSerializer, OrderSerializer
 )
+from .permissions import IsAdminOrReadOnly
 
 # 1. SIMPLE CRUD (Class-Based Views - CBV)
 # Using ViewSets for standard data that doesn't need complex logic
@@ -14,14 +16,17 @@ from .serializers import (
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [IsAdminOrReadOnly]
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
 class TaxViewSet(viewsets.ModelViewSet):
     queryset = Tax.objects.all()
@@ -34,11 +39,14 @@ class DiscountViewSet(viewsets.ModelViewSet):
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    # Orders can be viewed by any authenticated user (Cashiers can view past receipts)
+    permission_classes = [IsAuthenticated]
 
 # 2. COMPLEX LOGIC (Function-Based Views - FBV)
 # Using FBV for checkout because we need to calculate totals and deduct stock
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def create_order(request):
     """
     Custom API to handle POS checkout process.
@@ -56,6 +64,7 @@ def create_order(request):
         with transaction.atomic():
             # 1. Create the main Order record first
             order = Order.objects.create(
+                cashier=request.user,
                 cashier_id=data.get('cashier'),
                 customer_id=data.get('customer'),
                 payment_method=data.get('payment_method', 'CASH'),
