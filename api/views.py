@@ -106,3 +106,14 @@ def create_order(request):
     except Exception as e:
         # Catch any other database errors
         return Response({'error': 'Something went wrong during checkout'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_info(request):
+    user = request.user
+    user_info = {
+        'id': user.id,
+        'username': user.username,
+        'is_staff': user.is_staff,
+    }
+    return Response(user_info)
