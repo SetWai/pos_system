@@ -24,65 +24,79 @@ const Checkout = () => {
     }, []);
 
     const handleBarcodeSubmit = (e) => {
-    e.preventDefault();
-    const scannedProduct = products.find(p => p.barcode === barcodeInput);
-
-    if (scannedProduct) {
-        if (scannedProduct.stock_quantity > 0) {
-        addToCart(scannedProduct);
-        setBarcodeInput('');
-        } else {
-        alert("This item is out of stock!");
-        setBarcodeInput('');
+        if (e) e.preventDefault();
+    
+        let inputStr = barcodeInput.trim();
+        if (!inputStr) return;
+    
+        let qty = 1;
+        let code = inputStr;
+    
+        // Check if input contains the multiplication symbol '*'
+        if (inputStr.includes('*')) {
+          const parts = inputStr.split('*');
+          qty = parseInt(parts[0], 10) || 1; // Default to 1 if NaN
+          code = parts[1];
         }
-    } else {
-        alert("Product not found! Please check the barcode.");
-        setBarcodeInput('');
-    }
+    
+        const scannedProduct = products.find(p => p.barcode === code);
+        
+        if (scannedProduct) {
+          if (scannedProduct.stock_quantity >= qty) {
+            addToCart(scannedProduct, qty);
+            setBarcodeInput(''); // Clear input after success
+          } else {
+            alert(`Not enough stock! Only ${scannedProduct.stock_quantity} available.`);
+            setBarcodeInput('');
+          }
+        } else {
+          alert("Product not found! Please check the barcode.");
+          setBarcodeInput('');
+        }
     };
 
     const addToCart = (product) => {
-    const existingItem = cart.find(item => item.product_id === product.id);
-    if (existingItem) {
-        updateQuantity(product.id, existingItem.quantity + 1);
-    } else {
-        setCart([...cart, {
-        product_id: product.id,
-        name: product.name,
-        barcode: product.barcode, // Added barcode for display
-        unit_price: parseFloat(product.price),
-        quantity: 1,
-        item_subtotal: parseFloat(product.price),
-        max_stock: product.stock_quantity // Store max stock to validate later
-        }]);
-    }
+        const existingItem = cart.find(item => item.product_id === product.id);
+        if (existingItem) {
+            updateQuantity(product.id, existingItem.quantity + 1);
+        } else {
+            setCart([...cart, {
+                product_id: product.id,
+                name: product.name,
+                barcode: product.barcode, // Added barcode for display
+                unit_price: parseFloat(product.price),
+                quantity: 1,
+                item_subtotal: parseFloat(product.price),
+                max_stock: product.stock_quantity // Store max stock to validate later
+            }]);
+        }
     };
 
     // NEW: Advanced Quantity Management
     const updateQuantity = (productId, newQuantity) => {
-    // Ensure quantity doesn't drop below 1 or exceed available stock
-    const parsedQuantity = parseInt(newQuantity, 10);
+        // Ensure quantity doesn't drop below 1 or exceed available stock
+        const parsedQuantity = parseInt(newQuantity, 10);
 
-    if (isNaN(parsedQuantity) || parsedQuantity < 1) return;
+        if (isNaN(parsedQuantity) || parsedQuantity < 1) return;
 
-    setCart(cart.map(item => {
-        if (item.product_id === productId) {
-        if (parsedQuantity > item.max_stock) {
-            alert(`Only ${item.max_stock} items left in stock!`);
-            return item; // Keep previous quantity
-        }
-        return { 
-            ...item, 
-            quantity: parsedQuantity, 
-            item_subtotal: parsedQuantity * item.unit_price 
-        };
-        }
-        return item;
-    }));
+        setCart(cart.map(item => {
+            if (item.product_id === productId) {
+                if (parsedQuantity > item.max_stock) {
+                    alert(`Only ${item.max_stock} items left in stock!`);
+                    return item; // Keep previous quantity
+                }
+                return { 
+                    ...item, 
+                    quantity: parsedQuantity, 
+                    item_subtotal: parsedQuantity * item.unit_price 
+                };
+            }
+            return item;
+        }));
     };
 
     const removeFromCart = (productId) => {
-    setCart(cart.filter(item => item.product_id !== productId));
+        setCart(cart.filter(item => item.product_id !== productId));
     };
 
     const subtotal = cart.reduce((sum, item) => sum + item.item_subtotal, 0);
@@ -91,41 +105,72 @@ const Checkout = () => {
     const finalTotal = subtotal + taxAmount;
 
     const handleCheckout = async () => {
-    // ... (Your existing checkout logic remains exactly the same)
+        if (cart.length === 0) return alert("Cart is empty!");
+        const orderData = {
+          cashier: 1, 
+          payment_method: paymentMethod,
+          subtotal: subtotal.toFixed(2),
+          tax_amount: taxAmount.toFixed(2),
+          discount_amount: 0,
+          final_total: finalTotal.toFixed(2),
+          items: cart
+        };
+        try {
+          const response = await api.post('/checkout/', orderData);
+          setCart([]); 
+          navigate(`/receipt/${response.data.id}`);
+        } catch (err) {
+          alert(err.response?.data?.error || "Checkout failed.");
+        }
     };
-
+    // Function to handle on-screen numpad clicks
+    const handleNumpadClick = (value) => {
+        setBarcodeInput(prev => prev + value);
+    };
     return (
     <div style={{ display: 'flex', height: '100vh', padding: '20px', gap: '20px' }}>
         
-        {/* LEFT SIDE: ONLY Scanner & Quick Actions (Removed full product list) */}
-        <div style={{ flex: 1, paddingRight: '10px' }}>
-        <h2>POS Terminal</h2>
+        {/* LEFT SIDE: Barcode Scanner & Numpad */}
+      <div style={{ flex: 1, paddingRight: '10px', display: 'flex', flexDirection: 'column' }}>
+        <h2>POS Scanner</h2>
         
-        <div style={{ marginBottom: '20px', padding: '20px', backgroundColor: '#f0f0f0', borderRadius: '8px' }}>
-            <form onSubmit={handleBarcodeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <label style={{ fontWeight: 'bold', color: '#333' }}>Scan Barcode</label>
+        <div style={{ padding: '20px', backgroundColor: '#f0f0f0', borderRadius: '8px', color: '#000' }}>
+          <form onSubmit={handleBarcodeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <label style={{ fontWeight: 'bold' }}>Scan or Enter [Qty * Barcode]</label>
             <input 
-                type="text" 
-                placeholder="e.g. 123456" 
-                value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
-                style={{ padding: '15px', fontSize: '18px', borderRadius: '5px', border: '2px solid #007bff' }}
-                autoFocus 
+              type="text" 
+              placeholder="e.g. 5*1111 or 1111" 
+              value={barcodeInput}
+              onChange={(e) => setBarcodeInput(e.target.value)}
+              style={{ padding: '15px', fontSize: '20px', borderRadius: '5px', border: '2px solid #007bff', textAlign: 'center' }}
+              autoFocus 
             />
-            <button type="submit" style={{ padding: '15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', fontSize: '16px', cursor: 'pointer' }}>
-                Add to Cart
+            
+            {/* NUMPAD UI */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '10px' }}>
+              {['7','8','9','4','5','6','1','2','3','0','*'].map(num => (
+                <button 
+                  key={num} type="button" onClick={() => handleNumpadClick(num)}
+                  style={{ padding: '20px', fontSize: '20px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '5px', cursor: 'pointer' }}
+                >
+                  {num}
+                </button>
+              ))}
+              <button type="button" onClick={() => setBarcodeInput('')} style={{ padding: '20px', fontSize: '18px', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+                Clear
+              </button>
+            </div>
+
+            <button type="submit" style={{ padding: '15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', fontSize: '18px', cursor: 'pointer', marginTop: '10px' }}>
+              ENTER
             </button>
-            </form>
+          </form>
         </div>
 
-        <div style={{ marginTop: '30px', padding: '20px', border: '1px solid #ddd', borderRadius: '8px' }}>
-            <h3>Cashier Actions</h3>
-            {/* Button to navigate to the separate products page */}
-            <button onClick={() => navigate('/products')} style={{ width: '100%', padding: '10px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-                Lookup Products
-            </button>
-        </div>
-        </div>
+        <button onClick={() => navigate('/products')} style={{ marginTop: '20px', padding: '15px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+          Lookup Products
+        </button>
+      </div>
 
         {/* RIGHT SIDE: Enhanced Cart Layout */}
         <div className="cart-panel" style={{ flex: 2, padding: '20px', borderRadius: '8px', display: 'flex', flexDirection: 'column' }}>
@@ -187,9 +232,9 @@ const Checkout = () => {
             </div>
             
             <div style={{ width: '40%', textAlign: 'right' }}>
-            <p style={{ margin: '5px 0' }}>Subtotal: ${subtotal.toFixed(2)}</p>
-            <p style={{ margin: '5px 0' }}>Tax (5%): ${taxAmount.toFixed(2)}</p>
-            <h2 style={{ margin: '10px 0', color: '#28a745' }}>Total: ${finalTotal.toFixed(2)}</h2>
+                <p>Subtotal: ${subtotal.toFixed(2)}</p>
+                <p>Tax (5%): ${taxAmount.toFixed(2)}</p>
+                <h2 style={{ color: '#28a745' }}>Total: ${finalTotal.toFixed(2)}</h2>
             </div>
         </div>
         
