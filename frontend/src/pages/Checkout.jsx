@@ -55,19 +55,20 @@ const Checkout = () => {
         }
     };
 
-    const addToCart = (product) => {
+    const addToCart = (product, qtyToAdd = 1) => {
         const existingItem = cart.find(item => item.product_id === product.id);
+        
         if (existingItem) {
-            updateQuantity(product.id, existingItem.quantity + 1);
+            updateQuantity(product.id, existingItem.quantity + qtyToAdd);
         } else {
             setCart([...cart, {
                 product_id: product.id,
                 name: product.name,
-                barcode: product.barcode, // Added barcode for display
+                barcode: product.barcode, 
                 unit_price: parseFloat(product.price),
-                quantity: 1,
-                item_subtotal: parseFloat(product.price),
-                max_stock: product.stock_quantity // Store max stock to validate later
+                quantity: qtyToAdd, 
+                item_subtotal: parseFloat(product.price) * qtyToAdd,
+                max_stock: product.stock_quantity 
             }]);
         }
     };
