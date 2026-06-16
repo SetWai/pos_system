@@ -128,6 +128,11 @@ const Checkout = () => {
     const handleNumpadClick = (value) => {
         setBarcodeInput(prev => prev + value);
     };
+
+    // NEW: Function to handle backspace (delete last character)
+    const handleBackspace = () => {
+        setBarcodeInput(prev => prev.slice(0, -1));
+    };
     return (
     <div style={{ display: 'flex', height: '100vh', padding: '20px', gap: '20px' }}>
         
@@ -157,13 +162,20 @@ const Checkout = () => {
                   {num}
                 </button>
               ))}
-              <button type="button" onClick={() => setBarcodeInput('')} style={{ padding: '20px', fontSize: '18px', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-                Clear
+              <button 
+                type="button" 
+                onClick={handleBackspace} 
+                style={{ padding: '20px', fontSize: '24px', backgroundColor: '#ffc107', color: '#000', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+              >
+                ⌫
               </button>
             </div>
 
-            <button type="submit" style={{ padding: '15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', fontSize: '18px', cursor: 'pointer', marginTop: '10px' }}>
-              ENTER
+            <button 
+              type="submit" 
+              style={{ padding: '15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', fontSize: '22px', cursor: 'pointer', marginTop: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}
+            >
+              Enter <span>↵</span>
             </button>
           </form>
         </div>
