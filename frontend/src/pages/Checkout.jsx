@@ -1,11 +1,9 @@
-// src/pages/Checkout.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import './Checkout.css'; // <-- CSS ကို Import လုပ်ထားခြင်း
+import './Checkout.css'; 
 
 const Checkout = () => {
-    // ... (အပေါ်ပိုင်းက State တွေ၊ Functions တွေ အကုန်လုံးက အရင်အတိုင်း အတူတူပါပဲ။ ဘာမှ ပြင်စရာမလိုပါဘူး) ...
     const [products, setProducts] = useState([]);
     const [cart, setCart] = useState([]);
     const [barcodeInput, setBarcodeInput] = useState('');
@@ -155,12 +153,12 @@ const Checkout = () => {
             
             {/* LEFT SIDE: SCANNING AREA */}
             <div className="scanner-panel">
-                <h2 style={{ margin: '0 0 10px 0' }}>POS Scanner Counter</h2>
+                <h2 style={{ margin: '0 0 15px 0' }}>POS Scanner Counter</h2>
                 
-                <div className="grey-controls-box">
-                    
-                    <form onSubmit={handleBarcodeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <label style={{ fontWeight: 'bold' }}>Scan or Enter [Qty * Barcode]</label>
+                {/* Upper Section */}
+                <div className="scanner-top-section">
+                    <form onSubmit={handleBarcodeSubmit} className="scanner-top-form">
+                        <label style={{ fontWeight: 'bold', marginBottom: '5px' }}>Scan or Enter [Qty * Barcode]</label>
                         <input 
                             type="text" 
                             placeholder="e.g. 5*1111 or 1111" 
@@ -177,7 +175,7 @@ const Checkout = () => {
                                 </button>
                             ))}
                             <button type="button" onClick={handleBackspace} className="del-btn">
-                                Del
+                                ⌫
                             </button>
                         </div>
 
@@ -185,9 +183,10 @@ const Checkout = () => {
                             ↵
                         </button>
                     </form>
+                </div>
 
-                    <hr style={{ border: 'none', borderTop: '2px dashed #ddd', margin: '0' }} />
-
+                {/* Bottom Section (Fixed to bottom) */}
+                <div className="scanner-bottom-section">
                     <div className="action-grid">
                         <button type="button" onClick={handleVoidTransaction} className="square-btn btn-void">
                             Void<br/>Transaction
@@ -201,7 +200,6 @@ const Checkout = () => {
                         <button type="button" onClick={() => navigate('/products')} className="square-btn btn-lookup">
                             Lookup<br/>Products
                         </button>
-                        
                         <button 
                             type="button" 
                             onClick={() => setPaymentMethod('CASH')} 
@@ -217,15 +215,15 @@ const Checkout = () => {
                             Card<br/>Payment
                         </button>
                     </div>
-
                 </div>
             </div>
 
             {/* RIGHT SIDE: CURRENT ORDER AREA */}
             <div className="order-panel">
-                <h2 style={{ margin: '0 0 10px 0' }}>Current Order</h2>
+                <h2 style={{ margin: '0 0 15px 0' }}>Current Order</h2>
                 
-                <div style={{ flexGrow: 1, overflowY: 'auto', marginBottom: '15px' }}>
+                {/* Upper Section */}
+                <div className="order-top-section">
                     {cart.length === 0 ? <p style={{ color: '#666' }}>Waiting for scan...</p> : (
                         <table className="cart-table">
                             <thead>
@@ -259,12 +257,17 @@ const Checkout = () => {
                     )}
                 </div>
 
-                <div style={{ borderTop: '2px solid #ccc', paddingTop: '15px' }}>
-                    <div style={{ textAlign: 'right', marginBottom: '15px', fontSize: '15px' }}>
-                        <p style={{ margin: '3px 0' }}>Subtotal: <span style={{ fontWeight: 'bold' }}>${subtotal.toFixed(2)}</span></p>
-                        <p style={{ margin: '3px 0' }}>Tax (5%): <span style={{ fontWeight: 'bold' }}>${taxAmount.toFixed(2)}</span></p>
-                        <h2 style={{ color: '#28a745', margin: '5px 0' }}>Total: ${finalTotal.toFixed(2)}</h2>
-                        <p style={{ margin: '5px 0', fontSize: '13px', color: '#666' }}>Method: <strong>{paymentMethod}</strong></p>
+                {/* Bottom Section (Fixed to bottom, level with left side) */}
+                <div className="order-bottom-section">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                        <div>
+                            <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>Method: <strong>{paymentMethod}</strong></p>
+                        </div>
+                        <div style={{ textAlign: 'right', fontSize: '16px' }}>
+                            <p style={{ margin: '3px 0' }}>Subtotal: <span style={{ fontWeight: 'bold' }}>${subtotal.toFixed(2)}</span></p>
+                            <p style={{ margin: '3px 0' }}>Tax (5%): <span style={{ fontWeight: 'bold' }}>${taxAmount.toFixed(2)}</span></p>
+                            <h2 style={{ color: '#28a745', margin: '5px 0', fontSize: '24px' }}>Total: ${finalTotal.toFixed(2)}</h2>
+                        </div>
                     </div>
                     
                     <button onClick={handleCheckout} className="cashout-btn">

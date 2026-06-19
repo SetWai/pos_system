@@ -1,219 +1,236 @@
 /* --- Layout Wrappers --- */
 .checkout-wrapper {
     display: flex;
-    height: 90vh;
+    height: calc(100vh - 80px);
     padding: 20px;
     gap: 20px;
     background-color: #f4f6f8;
   }
   
-  .scanner-panel {
-    flex: 1.2;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    background-color: #ffffff;
-    color: #000000;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-  
-  .order-panel {
-    flex: 1;
-    background-color: #ffffff;
-    color: #000000;
-    padding: 20px;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-  
-  .grey-controls-box {
-    padding: 20px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    border: 1px solid #eee;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    flex-grow: 1;
-    overflow-y: auto;
-  }
-  
-  /* --- Input & Numpad --- */
-  .barcode-input {
-    padding: 12px;
-    font-size: 20px;
-    border-radius: 5px;
-    border: 2px solid #007bff;
-    text-align: center;
-    background-color: #fff;
-    color: #000;
-  }
-  
-  .numpad-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-top: 5px;
-  }
-  
-  .num-btn {
-    padding: 12px;
-    font-size: 18px;
-    background-color: #fff;
-    color: #000;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  
-  .num-btn:hover {
-    background-color: #e9ecef;
-  }
-  
-  .del-btn {
-    padding: 12px;
-    font-size: 16px;
-    background-color: #e2e3e5;
-    color: #000;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.2s;
-  }
-  
-  .del-btn:hover {
-    background-color: #d3d6d8;
-  }
-  
-  .enter-btn {
-    padding: 10px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 24px;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: background-color 0.2s;
-  }
-  
-  .enter-btn:hover {
-    background-color: #0056b3;
-  }
-  
-  /* --- Square Action Buttons --- */
-  .action-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-  }
-  
-  .square-btn {
-    aspect-ratio: 1 / 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 10px;
-    font-size: 14px;
-    font-weight: bold;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 2px 2px rgba(0,0,0,0.05);
-    color: white;
-    transition: opacity 0.2s;
-  }
-  
-  .square-btn:hover {
-    opacity: 0.8;
-  }
-  
-  .btn-void { background-color: #dc3545; }
-  .btn-suspend { background-color: #fd7e14; }
-  .btn-recall { background-color: #17a2b8; }
-  .btn-lookup { background-color: #6c757d; }
-  
-  /* --- Payment Buttons --- */
-  .payment-btn {
-    aspect-ratio: 1 / 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 10px;
-    font-size: 14px;
-    font-weight: bold;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    background-color: #e2e3e5;
-    color: #000;
-    border: 1px solid #ccc;
-  }
-  
-  .payment-btn.active {
-    background-color: #28a745;
-    color: white;
-    border: 2px solid #1e7e34;
-  }
-  
-  /* --- Cart Table --- */
-  .cart-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-  }
-  
-  .cart-table th, .cart-table td {
-    padding: 8px;
-    border-bottom: 1px solid #eee;
-  }
-  
-  .cart-table th {
-    border-bottom: 2px solid #ddd;
-  }
-  
-  .qty-input {
-    width: 45px;
-    padding: 5px;
-    text-align: center;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-  }
-  
-  .remove-btn {
-    color: red;
-    border: none;
-    background: none;
-    cursor: pointer;
-    font-size: 18px;
-    font-weight: bold;
-  }
-  
-  /* --- Cash Out Button --- */
-  .cashout-btn {
-    width: 100%;
-    padding: 18px;
-    background-color: #007bff;
-    color: white;
-    font-size: 20px;
-    font-weight: bold;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  
-  .cashout-btn:hover {
-    background-color: #0056b3;
-  }
+.scanner-panel, .order-panel {
+  flex: 1;
+  background-color: #ffffff;
+  color: #000000;
+  padding: 20px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+  box-sizing: border-box;
+  height: 100%;
+}
+
+.scanner-top-section, .order-top-section {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding-bottom: 20px;
+}
+
+.scanner-bottom-section, .order-bottom-section {
+  margin-top: auto; 
+  border-top: 2px solid #f0f0f0;
+  padding-top: 20px;
+}
+
+.grey-controls-box {
+  padding: 10px 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-grow: 1;
+  overflow-y: hidden;
+}
+
+/* --- Input & Numpad --- */
+.scanner-top-form {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 5px;
+}
+
+.barcode-input {
+  padding: 12px;
+  font-size: 18px;
+  border-radius: 5px;
+  border: 2px solid #007bff;
+  text-align: center;
+  background-color: #fff;
+  color: #000;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(4, 1fr); 
+  gap: 10px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  flex-grow: 1;
+}
+
+.num-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px; 
+  background-color: #fff;
+  color: #000;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.num-btn:hover {
+  background-color: #e9ecef;
+}
+
+.del-btn {
+  padding: 12px;
+  font-size: 16px;
+  background-color: #e2e3e5;
+  color: #000;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.del-btn:hover {
+  background-color: #d3d6d8;
+}
+
+.enter-btn {
+  min-height: 60px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.enter-btn:hover {
+  background-color: #0056b3;
+}
+
+/* --- Square Action Buttons --- */
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.square-btn {
+  height: 75px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 10px;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 2px rgba(0,0,0,0.05);
+  color: white;
+  transition: opacity 0.2s;
+}
+
+.square-btn:hover {
+  opacity: 0.8;
+}
+
+.btn-void { background-color: #dc3545; }
+.btn-suspend { background-color: #fd7e14; }
+.btn-recall { background-color: #17a2b8; }
+.btn-lookup { background-color: #6c757d; }
+
+/* --- Payment Buttons --- */
+.payment-btn {
+  display: 75px;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: #e2e3e5;
+  color: #000;
+  border: 1px solid #ccc;
+}
+
+.payment-btn.active {
+  background-color: #28a745;
+  color: white;
+  border: 2px solid #1e7e34;
+}
+
+/* --- Cart Table --- */
+.cart-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.cart-table th, .cart-table td {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.cart-table th {
+  border-bottom: 2px solid #ddd;
+}
+
+.qty-input {
+  width: 45px;
+  padding: 5px;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+.remove-btn {
+  color: red;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* --- Cash Out Button --- */
+.cashout-btn {
+  width: 100%;
+  height: 75px;
+  padding: 18px;
+  background-color: #007bff;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cashout-btn:hover {
+  background-color: #0056b3;
+}
