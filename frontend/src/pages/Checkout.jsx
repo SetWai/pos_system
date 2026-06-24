@@ -14,6 +14,12 @@ const Checkout = () => {
     const [cashTendered, setCashTendered] = useState('');
     const [cardLast4, setCardLast4] = useState('');
 
+    // NEW STATES: Recall & Void Modals
+    const [showRecallModal, setShowRecallModal] = useState(false);
+    const [showVoidModal, setShowVoidModal] = useState(false);
+    const [suspendedOrders, setSuspendedOrders] = useState([]);
+    const [selectedVoidOrder, setSelectedVoidOrder] = useState(null);
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -27,6 +33,10 @@ const Checkout = () => {
         };
         fetchProducts();
     }, []);
+
+    // Local Storage Helpers for Suspended Orders (Array Format)
+    const getSuspendedOrders = () => JSON.parse(localStorage.getItem('suspended_pos_orders')) || [];
+    const saveSuspendedOrders = (orders) => localStorage.setItem('suspended_pos_orders', JSON.stringify(orders));
 
     const handleBarcodeSubmit = (e) => {
         if (e) e.preventDefault();
@@ -103,32 +113,89 @@ const Checkout = () => {
         setShowPaymentModal(false);
     };
 
+    // ADVANCED POS FEATURES: SUSPEND, RECALL, VOID
+    const handleSuspendTransaction = () => {
+        if (cart.length === 0) return alert("Nothing to suspend. Cart is empty.");
+        
+        const referenceName = prompt("Enter a reference name for this suspended order (e.g., Table 5, Customer in red shirt):");
+        if (!referenceName) return; // User cancelled
+
+        const newSuspended = {
+            id: Date.now(),
+            name: referenceName,
+            time: new Date().toLocaleTimeString(),
+            items: cart,
+            total: finalTotal
+        };
+
+        const existingOrders = getSuspendedOrders();
+        saveSuspendedOrders([...existingOrders, newSuspended]);
+        resetCartAndPayment();
+        alert(`Transaction '${referenceName}' Suspended successfully.`);
+    };
+
+    const handleRecallTransaction = () => {
+        setSuspendedOrders(getSuspendedOrders());
+        setShowRecallModal(true);
+    };
+
+    const confirmRecallOrder = (order) => {
+        if (cart.length > 0) {
+            const confirmOverwrite = window.confirm("You have active items in your current cart. Recalling will clear them. Proceed?");
+            if (!confirmOverwrite) return;
+        }
+        
+        setCart(order.items);
+        const updatedOrders = suspendedOrders.filter(o => o.id !== order.id);
+        saveSuspendedOrders(updatedOrders);
+        setShowRecallModal(false);
+    };
+
     const handleVoidTransaction = () => {
-        if (cart.length === 0) return;
-        const passcode = prompt("Security Alert: Enter Admin Passcode to VOID current transaction:");
+        const passcode = prompt("Security Alert: Enter Admin Passcode (1234) to manage Voids:");
         if (passcode === '1234') { 
-            resetCartAndPayment();
-            alert("Transaction has been successfully voided.");
+            setSuspendedOrders(getSuspendedOrders());
+            setSelectedVoidOrder(null);
+            setShowVoidModal(true);
         } else {
             alert("Access Denied: Invalid Admin Passcode.");
         }
     };
 
-    const handleSuspendTransaction = () => {
-        if (cart.length === 0) return alert("Nothing to suspend. Cart is empty.");
-        localStorage.setItem('suspended_pos_cart', JSON.stringify(cart));
-        resetCartAndPayment();
-        alert("Transaction Suspended successfully. Ready for next customer.");
+    const voidCurrentActiveCart = () => {
+        if (cart.length === 0) return alert("Active cart is already empty.");
+        if (window.confirm("Are you sure you want to completely VOID the current active transaction?")) {
+            resetCartAndPayment();
+        }
     };
 
-    const handleRecallTransaction = () => {
-        const savedCart = localStorage.getItem('suspended_pos_cart');
-        if (savedCart) {
-            setCart(JSON.parse(savedCart));
-            localStorage.removeItem('suspended_pos_cart');
-            alert("Suspended transaction successfully recalled.");
-        } else {
-            alert("No suspended transaction found.");
+    const voidEntireSuspendedOrder = (orderId) => {
+        if (!window.confirm("Are you sure you want to delete this suspended transaction permanently?")) return;
+        const updated = suspendedOrders.filter(o => o.id !== orderId);
+        setSuspendedOrders(updated);
+        saveSuspendedOrders(updated);
+        if (selectedVoidOrder?.id === orderId) setSelectedVoidOrder(null);
+    };
+
+    const deleteItemFromSuspendedOrder = (orderId, productId) => {
+        const updatedOrders = suspendedOrders.map(order => {
+            if (order.id === orderId) {
+                const newItems = order.items.filter(item => item.product_id !== productId);
+                // Recalculate totals for the suspended order
+                const newSubtotal = newItems.reduce((sum, item) => sum + item.item_subtotal, 0);
+                const newTotal = newSubtotal + (newSubtotal * 0.05);
+                return { ...order, items: newItems, total: newTotal };
+            }
+            return order;
+        }).filter(order => order.items.length > 0); // Remove order completely if 0 items left
+
+        setSuspendedOrders(updatedOrders);
+        saveSuspendedOrders(updatedOrders);
+        
+        // Update the detail view if the order is still open
+        if (selectedVoidOrder?.id === orderId) {
+            const activeOrderNow = updatedOrders.find(o => o.id === orderId);
+            setSelectedVoidOrder(activeOrderNow || null);
         }
     };
 
@@ -255,65 +322,129 @@ const Checkout = () => {
                 </div>
             </div>
 
-            {/* ========================================= */}
-            {/* FULL SCREEN PAYMENT MODAL (CENTERED ROUTE) */}
-            {/* ========================================= */}
-            {showPaymentModal && (
+            {/* MODAL 2: RECALL ORDER MODAL */}
+            {showRecallModal && (
                 <div className="payment-modal-overlay">
-                    <div className="payment-modal-box">
-                        <h2 className="modal-title">
-                            {paymentMethod === 'CASH' ? 'Cash Payment' : 'Card Payment'}
-                        </h2>
+                    <div className="management-modal-box">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>
+                            <h2 style={{ margin: 0 }}>Recall Suspended Transaction</h2>
+                            <button onClick={() => setShowRecallModal(false)} className="remove-btn" style={{ fontSize: '24px' }}>&times;</button>
+                        </div>
                         
-                        <p className="modal-label">Total Amount Due</p>
-                        <div className="modal-amount">${finalTotal.toFixed(2)}</div>
+                        <div className="modal-table-wrapper">
+                            {suspendedOrders.length === 0 ? (
+                                <p style={{ padding: '20px', textAlign: 'center', color: '#666' }}>No suspended transactions found.</p>
+                            ) : (
+                                <table className="modal-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Reference Name</th>
+                                            <th>Time</th>
+                                            <th style={{ textAlign: 'center' }}>Total Items</th>
+                                            <th style={{ textAlign: 'right' }}>Total Amount</th>
+                                            <th style={{ textAlign: 'center' }}>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {suspendedOrders.map(order => (
+                                            <tr key={order.id}>
+                                                <td><strong>{order.name}</strong></td>
+                                                <td>{order.time}</td>
+                                                <td style={{ textAlign: 'center' }}>{order.items.reduce((sum, item) => sum + item.quantity, 0)}</td>
+                                                <td style={{ textAlign: 'right', fontWeight: 'bold' }}>${order.total.toFixed(2)}</td>
+                                                <td style={{ textAlign: 'center' }}>
+                                                    <button onClick={() => confirmRecallOrder(order)} className="btn-action btn-restore">Restore to Cart</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* ========================================= */}
+            {/* MODAL 3: VOID MANAGER MODAL */}
+            {/* ========================================= */}
+            {showVoidModal && (
+                <div className="payment-modal-overlay">
+                    <div className="management-modal-box">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>
+                            <h2 style={{ margin: 0, color: '#dc3545' }}>Void Management (Admin)</h2>
+                            <button onClick={() => setShowVoidModal(false)} className="remove-btn" style={{ fontSize: '24px' }}>&times;</button>
+                        </div>
+                        
+                        <div style={{ marginBottom: '10px' }}>
+                            <button onClick={voidCurrentActiveCart} className="btn-action btn-delete" style={{ padding: '10px 15px' }}>
+                                🚫 Void Current Active Screen Transaction
+                            </button>
+                        </div>
 
-                        {paymentMethod === 'CASH' ? (
-                            <>
-                                <p className="modal-label">Enter Cash Tendered</p>
-                                <input 
-                                    type="number" 
-                                    autoFocus
-                                    className="modal-input" 
-                                    placeholder="0.00"
-                                    value={cashTendered}
-                                    onChange={(e) => setCashTendered(e.target.value)}
-                                />
-                                
-                                {cashTendered && isCashEnough ? (
-                                    <p className="modal-change">Change: ${changeAmt.toFixed(2)}</p>
-                                ) : cashTendered && !isCashEnough ? (
-                                    <p className="modal-error">Need ${Math.abs(changeAmt).toFixed(2)} more!</p>
-                                ) : (
-                                    <p style={{height: '26px', margin: 0}}></p> /* Spacer */
+                        <div className="void-split-view">
+                            {/* Left Side: List of Suspended Orders */}
+                            <div className="void-left">
+                                <h3 style={{ margin: '0 0 15px 0' }}>Suspended Orders</h3>
+                                {suspendedOrders.length === 0 ? <p>No suspended orders.</p> : (
+                                    <table className="modal-table">
+                                        <tbody>
+                                            {suspendedOrders.map(order => (
+                                                <tr key={order.id} className={selectedVoidOrder?.id === order.id ? 'active-row' : ''}>
+                                                    <td>
+                                                        <strong>{order.name}</strong><br/>
+                                                        <small>${order.total.toFixed(2)}</small>
+                                                    </td>
+                                                    <td style={{ textAlign: 'right' }}>
+                                                        <button onClick={() => setSelectedVoidOrder(order)} className="btn-action btn-view">View</button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 )}
-                            </>
-                        ) : (
-                            <>
-                                <p className="modal-label">Enter Last 4 Digits of Card</p>
-                                <input 
-                                    type="text" 
-                                    autoFocus
-                                    maxLength="4"
-                                    className="modal-input" 
-                                    placeholder="e.g. 1234"
-                                    value={cardLast4}
-                                    onChange={(e) => setCardLast4(e.target.value.replace(/\D/g, ''))}
-                                />
-                            </>
-                        )}
+                            </div>
 
-                        <div className="modal-buttons">
-                            <button className="btn-cancel" onClick={() => setShowPaymentModal(false)}>
-                                Back
-                            </button>
-                            <button 
-                                className="btn-confirm" 
-                                onClick={confirmPayment} 
-                                disabled={isConfirmDisabled}
-                            >
-                                Confirm Payment
-                            </button>
+                            {/* Right Side: Items in the Selected Suspended Order */}
+                            <div className="void-right">
+                                <h3 style={{ margin: '0 0 15px 0' }}>
+                                    {selectedVoidOrder ? `Items in '${selectedVoidOrder.name}'` : 'Select an order to view items'}
+                                </h3>
+                                
+                                {selectedVoidOrder && (
+                                    <>
+                                        <div className="modal-table-wrapper" style={{ flexGrow: 1 }}>
+                                            <table className="modal-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Item</th>
+                                                        <th style={{ textAlign: 'center' }}>Qty</th>
+                                                        <th style={{ textAlign: 'center' }}>Delete</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {selectedVoidOrder.items.map(item => (
+                                                        <tr key={item.product_id}>
+                                                            <td>{item.name}</td>
+                                                            <td style={{ textAlign: 'center' }}>{item.quantity}</td>
+                                                            <td style={{ textAlign: 'center' }}>
+                                                                <button onClick={() => deleteItemFromSuspendedOrder(selectedVoidOrder.id, item.product_id)} className="btn-action btn-delete" style={{ padding: '5px 10px' }}>
+                                                                    X
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        
+                                        <div style={{ marginTop: '15px', textAlign: 'right' }}>
+                                            <button onClick={() => voidEntireSuspendedOrder(selectedVoidOrder.id)} className="btn-action btn-delete" style={{ padding: '12px 20px', width: '100%' }}>
+                                                Void Entire Suspended Order
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

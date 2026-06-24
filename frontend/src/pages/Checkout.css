@@ -343,3 +343,91 @@
   background-color: #a0c4ff;
   cursor: not-allowed;
 }
+
+/* --- Recall & Void Management Modals --- */
+.management-modal-box {
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 12px;
+  width: 850px;
+  max-width: 95vw;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: popIn 0.3s ease-out forwards;
+  max-height: 85vh;
+}
+
+.modal-table-wrapper {
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fff;
+}
+
+.modal-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.modal-table th, .modal-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-table th {
+  background-color: #f8f9fa;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.modal-table tr:hover {
+  background-color: #f1f3f5;
+}
+
+.btn-action {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  color: white;
+  transition: opacity 0.2s;
+}
+
+.btn-action:hover { opacity: 0.8; }
+.btn-restore { background-color: #28a745; }
+.btn-delete { background-color: #dc3545; }
+.btn-view { background-color: #17a2b8; }
+
+/* Void Modal Split View */
+.void-split-view {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  min-height: 350px;
+}
+
+.void-left, .void-right {
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-height: 450px;
+  overflow-y: auto;
+}
+
+.void-right {
+  flex: 1.5; 
+}
+
+.active-row {
+  background-color: #e2eef9 !important;
+  border-left: 4px solid #007bff;
+}
