@@ -144,6 +144,9 @@ const Checkout = () => {
 
     // 2. Triggered when Confirm is clicked inside the Modal
     const confirmPayment = async () => {
+        const tenderedAmt = parseFloat(cashTendered) || 0;
+        const changeAmt = tenderedAmt - finalTotal;
+
         const orderData = {
             cashier: 1, 
             payment_method: paymentMethod, 
@@ -151,7 +154,10 @@ const Checkout = () => {
             tax_amount: taxAmount.toFixed(2),
             discount_amount: 0,
             final_total: finalTotal.toFixed(2),
-            items: cart
+            items: cart,
+            cash_tendered: paymentMethod === 'CASH' ? tenderedAmt.toFixed(2) : null,
+            change_amount: paymentMethod === 'CASH' ? changeAmt.toFixed(2) : null,
+            card_last4: paymentMethod === 'CARD' ? cardLast4 : null,
         };
         try {
             const response = await api.post('/checkout/', orderData);

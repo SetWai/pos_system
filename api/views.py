@@ -71,7 +71,10 @@ def create_order(request):
                 subtotal=data.get('subtotal', 0),
                 tax_amount=data.get('tax_amount', 0),
                 discount_amount=data.get('discount_amount', 0),
-                final_total=data.get('final_total', 0)
+                final_total=data.get('final_total', 0),
+                cash_tendered=data.get('cash_tendered'),
+                change_amount=data.get('change_amount'),
+                card_last4=data.get('card_last4'),
             )
 
             # 2. Loop through each item to create OrderItems and update Stock

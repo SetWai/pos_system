@@ -44,8 +44,4 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = [
-            'id', 'cashier', 'cashier_name', 'customer', 'subtotal', 
-            'tax_amount', 'discount_amount', 'final_total', 
-            'payment_method', 'created_at', 'items'
-        ]
+        fields = '__all__'

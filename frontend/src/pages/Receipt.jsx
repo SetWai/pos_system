@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 const Receipt = () => {
-    const { id } = useParams(); // Get the order ID from the URL
+    const { id } = useParams();
     const [order, setOrder] = useState(null);
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -33,12 +34,15 @@ const Receipt = () => {
             
             {/* Action Buttons (Hidden during printing) */}
             <div className="no-print" style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
-            <button onClick={handlePrint} style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-                Print Receipt
-            </button>
-            <Link to="/checkout" style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>
-                New Order
-            </Link>
+                <button onClick={() => navigate('/checkout')} style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '16px' }}>
+                    ← Back to POS
+                </button>
+                <button onClick={handlePrint} style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+                    Print Receipt
+                </button>
+                <Link to="/checkout" style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>
+                    New Order
+                </Link>
             </div>
 
             {/* Receipt Paper UI */}
@@ -86,12 +90,40 @@ const Receipt = () => {
                 <p style={{ margin: '5px 0' }}>Subtotal: ${order.subtotal}</p>
                 <p style={{ margin: '5px 0' }}>Tax (5%): ${order.tax_amount}</p>
                 <h3 style={{ margin: '5px 0' }}>TOTAL: ${order.final_total}</h3>
-                <p style={{ margin: '5px 0', fontSize: '12px', color: '#555' }}>Payment: {order.payment_method}</p>
             </div>
 
-            <p style={{ textAlign: 'center', fontSize: '12px', borderTop: '1px dashed #000', paddingTop: '10px' }}>
-                Thank you for shopping with us!
-            </p>
+            {/* DYNAMIC PAYMENT DETAILS */}
+            <div style={{ borderTop: '1px dashed #000', paddingTop: '10px', marginTop: '10px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', margin: '3px 0' }}>
+                            <span>Method:</span>
+                            <strong>{order.payment_method}</strong>
+                        </div>
+
+                        {order.payment_method === 'CASH' && (
+                            <>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', margin: '3px 0' }}>
+                                    <span>Cash Tendered:</span>
+                                    <span>${parseFloat(order.cash_tendered || 0).toFixed(2)}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', margin: '3px 0', fontWeight: 'bold' }}>
+                                    <span>Change:</span>
+                                    <span>${parseFloat(order.change_amount || 0).toFixed(2)}</span>
+                                </div>
+                            </>
+                        )}
+
+                        {order.payment_method === 'CARD' && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '3px 0' }}>
+                                <span>Card Number:</span>
+                                <span>**** **** **** {order.card_last4}</span>
+                            </div>
+                        )}
+                </div>
+
+                <div style={{ textAlign: 'center', marginTop: '30px', fontSize: '13px' }}>
+                    <p style={{ margin: 0 }}>Thank you for shopping with us!</p>
+                    <p style={{ margin: 0 }}>Please come again.</p>
+                </div>
             </div>
 
             {/* CSS to hide buttons when actual printing happens */}
