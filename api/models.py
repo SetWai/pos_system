@@ -88,3 +88,9 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name}"
+    
+class POSSetting(models.Model):
+    void_passcode = models.CharField(max_length=20, default="1234")
+
+    def __str__(self):
+        return "POS Security Settings"

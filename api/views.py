@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.db import transaction 
 from rest_framework.permissions import IsAuthenticated
-from .models import Category, Product, Customer, Tax, Discount, Order, OrderItem
+from .models import Category, Product, Customer, Tax, Discount, Order, OrderItem, POSSetting
 from .serializers import (
     CategorySerializer, ProductSerializer, CustomerSerializer,
     TaxSerializer, DiscountSerializer, OrderSerializer
@@ -109,6 +109,24 @@ def create_order(request):
     except Exception as e:
         # Catch any other database errors
         return Response({'error': 'Something went wrong during checkout'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def verify_void_pin(request):
+    """
+    Check if the provided PIN matches the dynamic Void Passcode in POSSetting.
+    """
+    provided_pin = request.data.get('pin', '')
+    
+    # Get the first setting row (Create one automatically if it doesn't exist)
+    setting = POSSetting.objects.first()
+    if not setting:
+        setting = POSSetting.objects.create(void_passcode="1234")
+        
+    if setting.void_passcode == str(provided_pin):
+        return Response({"valid": True})
+    else:
+        return Response({"valid": False, "error": "Invalid Passcode"}, status=status.HTTP_403_FORBIDDEN)
     
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

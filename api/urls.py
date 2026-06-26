@@ -18,4 +18,5 @@ urlpatterns = [
     # 2. Custom Path for Function-Based View (Checkout API)
     path('checkout/', views.create_order, name='api-checkout'),
     path('me/', views.get_user_info, name='user-info'),
+    path('verify-pin/', views.verify_void_pin, name='verify-pin'),
 ]

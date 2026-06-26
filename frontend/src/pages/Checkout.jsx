@@ -9,16 +9,28 @@ const Checkout = () => {
     const [barcodeInput, setBarcodeInput] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('CASH'); 
     
-    // NEW STATES FOR PAYMENT MODAL
+    // PAYMENT MODAL
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [cashTendered, setCashTendered] = useState('');
     const [cardLast4, setCardLast4] = useState('');
 
-    // NEW STATES: Recall & Void Modals
+    // RECALL & VOID MODALS
     const [showRecallModal, setShowRecallModal] = useState(false);
     const [showVoidModal, setShowVoidModal] = useState(false);
     const [suspendedOrders, setSuspendedOrders] = useState([]);
     const [selectedVoidOrder, setSelectedVoidOrder] = useState(null);
+
+    // SECURITY PASSCODE MODAL
+    const [showPasscodeModal, setShowPasscodeModal] = useState(false);
+    const [adminPasscode, setAdminPasscode] = useState('');
+    const [passcodeError, setPasscodeError] = useState('');
+
+    // SUSPEND MODAL
+    const [showSuspendModal, setShowSuspendModal] = useState(false);
+    const [suspendReference, setSuspendReference] = useState('');
+
+    // REUSABLE CUSTOM ALERT MODAL
+    const [alertConfig, setAlertConfig] = useState({ show: false, message: '' });
 
     const navigate = useNavigate();
 
@@ -34,9 +46,12 @@ const Checkout = () => {
         fetchProducts();
     }, []);
 
-    // Local Storage Helpers for Suspended Orders (Array Format)
     const getSuspendedOrders = () => JSON.parse(localStorage.getItem('suspended_pos_orders')) || [];
     const saveSuspendedOrders = (orders) => localStorage.setItem('suspended_pos_orders', JSON.stringify(orders));
+
+    const triggerAlert = (message) => {
+        setAlertConfig({ show: true, message });
+    };
 
     const handleBarcodeSubmit = (e) => {
         if (e) e.preventDefault();
@@ -59,11 +74,11 @@ const Checkout = () => {
                 addToCart(scannedProduct, qty);
                 setBarcodeInput('');
             } else {
-                alert(`Not enough stock! Only ${scannedProduct.stock_quantity} available.`);
+                triggerAlert(`Not enough stock! Only ${scannedProduct.stock_quantity} available.`);
                 setBarcodeInput('');
             }
         } else {
-            alert("Product not found! Please check the barcode.");
+            triggerAlert("Product not found! Please check the barcode.");
             setBarcodeInput('');
         }
     };
@@ -92,7 +107,7 @@ const Checkout = () => {
         setCart(cart.map(item => {
             if (item.product_id === productId) {
                 if (parsedQuantity > item.max_stock) {
-                    alert(`Only ${item.max_stock} items left in stock!`);
+                    triggerAlert(`Only ${item.max_stock} items left in stock!`);
                     return item;
                 }
                 return { ...item, quantity: parsedQuantity, item_subtotal: parsedQuantity * item.unit_price };
@@ -113,12 +128,16 @@ const Checkout = () => {
         setShowPaymentModal(false);
     };
 
-    // ADVANCED POS FEATURES: SUSPEND, RECALL, VOID
-    const handleSuspendTransaction = () => {
-        if (cart.length === 0) return alert("Nothing to suspend. Cart is empty.");
-        
-        const referenceName = prompt("Enter a reference name for this suspended order (e.g., Table 5, Customer in red shirt):");
-        if (!referenceName) return; // User cancelled
+    // --- SUSPEND TRANSACTION ---
+    const handleSuspendClick = () => {
+        if (cart.length === 0) return triggerAlert("Nothing to suspend. Cart is empty.");
+        setSuspendReference(''); 
+        setShowSuspendModal(true);
+    };
+
+    const confirmSuspendOrder = () => {
+        const referenceName = suspendReference.trim();
+        if (!referenceName) return; 
 
         const newSuspended = {
             id: Date.now(),
@@ -131,10 +150,11 @@ const Checkout = () => {
         const existingOrders = getSuspendedOrders();
         saveSuspendedOrders([...existingOrders, newSuspended]);
         resetCartAndPayment();
-        alert(`Transaction '${referenceName}' Suspended successfully.`);
+        setShowSuspendModal(false);
     };
 
-    const handleRecallTransaction = () => {
+    // --- RECALL TRANSACTION ---
+    const handleRecallClick = () => {
         setSuspendedOrders(getSuspendedOrders());
         setShowRecallModal(true);
     };
@@ -151,19 +171,31 @@ const Checkout = () => {
         setShowRecallModal(false);
     };
 
-    const handleVoidTransaction = () => {
-        const passcode = prompt("Security Alert: Enter Admin Passcode (1234) to manage Voids:");
-        if (passcode === '1234') { 
-            setSuspendedOrders(getSuspendedOrders());
-            setSelectedVoidOrder(null);
-            setShowVoidModal(true);
-        } else {
-            alert("Access Denied: Invalid Admin Passcode.");
+    // --- VOID TRANSACTION ---
+    const handleVoidClick = () => {
+        setAdminPasscode('');
+        setPasscodeError('');
+        setShowPasscodeModal(true);
+    };
+
+    const submitAdminPasscode = async () => {
+        if (!adminPasscode) return; 
+
+        try {
+            const response = await api.post('/verify-pin/', { pin: adminPasscode });
+            if (response.data.valid) {
+                setShowPasscodeModal(false);
+                setSuspendedOrders(getSuspendedOrders());
+                setSelectedVoidOrder(null);
+                setShowVoidModal(true);
+            }
+        } catch (err) {
+            setPasscodeError("Access Denied: Invalid Admin Passcode.");
         }
     };
 
     const voidCurrentActiveCart = () => {
-        if (cart.length === 0) return alert("Active cart is already empty.");
+        if (cart.length === 0) return triggerAlert("Active cart is already empty.");
         if (window.confirm("Are you sure you want to completely VOID the current active transaction?")) {
             resetCartAndPayment();
         }
@@ -181,18 +213,16 @@ const Checkout = () => {
         const updatedOrders = suspendedOrders.map(order => {
             if (order.id === orderId) {
                 const newItems = order.items.filter(item => item.product_id !== productId);
-                // Recalculate totals for the suspended order
                 const newSubtotal = newItems.reduce((sum, item) => sum + item.item_subtotal, 0);
                 const newTotal = newSubtotal + (newSubtotal * 0.05);
                 return { ...order, items: newItems, total: newTotal };
             }
             return order;
-        }).filter(order => order.items.length > 0); // Remove order completely if 0 items left
+        }).filter(order => order.items.length > 0); 
 
         setSuspendedOrders(updatedOrders);
         saveSuspendedOrders(updatedOrders);
         
-        // Update the detail view if the order is still open
         if (selectedVoidOrder?.id === orderId) {
             const activeOrderNow = updatedOrders.find(o => o.id === orderId);
             setSelectedVoidOrder(activeOrderNow || null);
@@ -203,13 +233,12 @@ const Checkout = () => {
     const taxAmount = subtotal * 0.05;
     const finalTotal = subtotal + taxAmount;
 
-    // 1. Triggered when Cash Out is clicked
+    // --- CHECKOUT ---
     const handleCheckoutClick = () => {
-        if (cart.length === 0) return alert("Cart is empty!");
-        setShowPaymentModal(true); // Open the center modal instead of checking out immediately
+        if (cart.length === 0) return triggerAlert("Cart is empty! Cannot proceed to checkout.");
+        setShowPaymentModal(true); 
     };
 
-    // 2. Triggered when Confirm is clicked inside the Modal
     const confirmPayment = async () => {
         const tenderedAmt = parseFloat(cashTendered) || 0;
         const changeAmt = tenderedAmt - finalTotal;
@@ -231,19 +260,16 @@ const Checkout = () => {
             resetCartAndPayment(); 
             navigate(`/receipt/${response.data.id}`);
         } catch (err) {
-            alert(err.response?.data?.error || "Checkout failed.");
+            triggerAlert(err.response?.data?.error || "Checkout failed.");
         }
     };
 
     const handleNumpadClick = (value) => setBarcodeInput(prev => prev + value);
     const handleBackspace = () => setBarcodeInput(prev => prev.slice(0, -1));
 
-    // Calculate dynamic values for the modal
     const tenderedAmt = parseFloat(cashTendered) || 0;
     const isCashEnough = tenderedAmt >= finalTotal;
     const changeAmt = tenderedAmt - finalTotal;
-    
-    // Check if the Confirm button should be disabled
     const isConfirmDisabled = 
         (paymentMethod === 'CASH' && !isCashEnough) || 
         (paymentMethod === 'CARD' && cardLast4.length !== 4);
@@ -269,16 +295,16 @@ const Checkout = () => {
                             {['7','8','9','4','5','6','1','2','3','0','*'].map(num => (
                                 <button key={num} type="button" onClick={() => handleNumpadClick(num)} className="num-btn">{num}</button>
                             ))}
-                            <button type="button" onClick={handleBackspace} className="del-btn">⌫</button>
+                            <button type="button" onClick={handleBackspace} className="del-btn">Del</button>
                         </div>
                         <button type="submit" className="enter-btn">↵</button>
                     </form>
                 </div>
                 <div className="scanner-bottom-section">
                     <div className="action-grid">
-                        <button type="button" onClick={handleVoidTransaction} className="square-btn btn-void">Void<br/>Transaction</button>
-                        <button type="button" onClick={handleSuspendTransaction} className="square-btn btn-suspend">Suspend<br/>Order</button>
-                        <button type="button" onClick={handleRecallTransaction} className="square-btn btn-recall">Recall<br/>Order</button>
+                        <button type="button" onClick={handleVoidClick} className="square-btn btn-void">Void<br/>Manager</button>
+                        <button type="button" onClick={handleSuspendClick} className="square-btn btn-suspend">Suspend<br/>Order</button>
+                        <button type="button" onClick={handleRecallClick} className="square-btn btn-recall">Recall<br/>Order</button>
                         <button type="button" onClick={() => navigate('/products')} className="square-btn btn-lookup">Lookup<br/>Products</button>
                         <button type="button" onClick={() => { setPaymentMethod('CASH'); setCashTendered(''); setCardLast4(''); }} className={`payment-btn ${paymentMethod === 'CASH' ? 'active' : ''}`}>Cash<br/>Payment</button>
                         <button type="button" onClick={() => { setPaymentMethod('CARD'); setCashTendered(''); setCardLast4(''); }} className={`payment-btn ${paymentMethod === 'CARD' ? 'active' : ''}`}>Card<br/>Payment</button>
@@ -317,12 +343,116 @@ const Checkout = () => {
                             <h2 style={{ color: '#28a745', margin: '5px 0', fontSize: '24px' }}>Total: ${finalTotal.toFixed(2)}</h2>
                         </div>
                     </div>
-                    {/* Changed onClick to handleCheckoutClick to open Modal */}
                     <button onClick={handleCheckoutClick} className="cashout-btn">Cash Out</button>
                 </div>
             </div>
 
-            {/* MODAL 2: RECALL ORDER MODAL */}
+            {/* MODAL 1: REUSABLE CUSTOM ALERT MODAL */}
+            {alertConfig.show && (
+                <div className="payment-modal-overlay" style={{ zIndex: 9999 }}>
+                    <div className="payment-modal-box" style={{ width: '400px', textAlign: 'center' }}>
+                        <h2 className="modal-title" style={{ color: '#dc3545', borderBottom: 'none', paddingBottom: 0 }}>
+                            ⚠️ Notice
+                        </h2>
+                        <p style={{ fontSize: '18px', margin: '20px 0', color: '#333' }}>
+                            {alertConfig.message}
+                        </p>
+                        <button 
+                            className="btn-confirm" 
+                            onClick={() => setAlertConfig({ show: false, message: '' })} 
+                            style={{ width: '100%', backgroundColor: '#007bff' }}
+                            autoFocus
+                        >
+                            OK
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL 2: ADMIN SECURITY PASSCODE MODAL */}
+            {showPasscodeModal && (
+                <div className="payment-modal-overlay">
+                    <div className="payment-modal-box" style={{ width: '400px' }}>
+                        <h2 className="modal-title" style={{ color: '#dc3545', borderBottom: '2px solid #dc3545' }}>Security Alert</h2>
+                        <p className="modal-label" style={{ marginTop: '10px' }}>Enter Admin Passcode:</p>
+                        
+                        <input 
+                            type="password" 
+                            autoFocus
+                            className="modal-input" 
+                            placeholder="****"
+                            value={adminPasscode}
+                            onChange={(e) => {
+                                setAdminPasscode(e.target.value);
+                                setPasscodeError(''); 
+                            }}
+                            onKeyDown={(e) => e.key === 'Enter' && submitAdminPasscode()} 
+                        />
+                        
+                        {passcodeError && <p className="modal-error" style={{ marginTop: '10px' }}>{passcodeError}</p>}
+
+                        <div className="modal-buttons">
+                            <button className="btn-cancel" onClick={() => setShowPasscodeModal(false)}>Cancel</button>
+                            <button className="btn-confirm" onClick={submitAdminPasscode} style={{ backgroundColor: '#dc3545' }}>Verify</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* MODAL 3: SUSPEND ORDER MODAL */}
+            {showSuspendModal && (
+                <div className="payment-modal-overlay">
+                    <div className="payment-modal-box" style={{ width: '450px' }}>
+                        <h2 className="modal-title" style={{ color: '#fd7e14', borderBottom: '2px solid #fd7e14' }}>Suspend Order</h2>
+                        <p className="modal-label" style={{ marginTop: '10px' }}>Enter Reference Name:</p>
+                        <input 
+                            type="text" 
+                            autoFocus
+                            className="modal-input" 
+                            placeholder="e.g. Customer1, Customer2"
+                            value={suspendReference}
+                            onChange={(e) => setSuspendReference(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && confirmSuspendOrder()}
+                        />
+                        <div className="modal-buttons">
+                            <button className="btn-cancel" onClick={() => setShowSuspendModal(false)}>Cancel</button>
+                            <button className="btn-confirm" onClick={confirmSuspendOrder} style={{ backgroundColor: '#fd7e14' }} disabled={!suspendReference.trim()}>
+                                Suspend
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL 4: PAYMENT MODAL */}
+            {showPaymentModal && (
+                <div className="payment-modal-overlay">
+                    <div className="payment-modal-box">
+                        <h2 className="modal-title">{paymentMethod === 'CASH' ? 'Cash Payment' : 'Card Payment'}</h2>
+                        <p className="modal-label">Total Amount Due</p>
+                        <div className="modal-amount">${finalTotal.toFixed(2)}</div>
+
+                        {paymentMethod === 'CASH' ? (
+                            <>
+                                <p className="modal-label">Enter Cash Tendered</p>
+                                <input type="number" autoFocus className="modal-input" placeholder="0.00" value={cashTendered} onChange={(e) => setCashTendered(e.target.value)} />
+                                {cashTendered && isCashEnough ? <p className="modal-change">Change: ${changeAmt.toFixed(2)}</p> : cashTendered && !isCashEnough ? <p className="modal-error">Need ${Math.abs(changeAmt).toFixed(2)} more!</p> : <p style={{height: '26px', margin: 0}}></p>}
+                            </>
+                        ) : (
+                            <>
+                                <p className="modal-label">Enter Last 4 Digits of Card</p>
+                                <input type="text" autoFocus maxLength="4" className="modal-input" placeholder="e.g. 1234" value={cardLast4} onChange={(e) => setCardLast4(e.target.value.replace(/\D/g, ''))} />
+                            </>
+                        )}
+                        <div className="modal-buttons">
+                            <button className="btn-cancel" onClick={() => setShowPaymentModal(false)}>Back</button>
+                            <button className="btn-confirm" onClick={confirmPayment} disabled={isConfirmDisabled}>Confirm Payment</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL 5: RECALL ORDER MODAL */}
             {showRecallModal && (
                 <div className="payment-modal-overlay">
                     <div className="management-modal-box">
@@ -364,9 +494,8 @@ const Checkout = () => {
                     </div>
                 </div>
             )}
-            {/* ========================================= */}
-            {/* MODAL 3: VOID MANAGER MODAL */}
-            {/* ========================================= */}
+
+            {/* MODAL 6: VOID MANAGER MODAL */}
             {showVoidModal && (
                 <div className="payment-modal-overlay">
                     <div className="management-modal-box">
@@ -377,7 +506,7 @@ const Checkout = () => {
                         
                         <div style={{ marginBottom: '10px' }}>
                             <button onClick={voidCurrentActiveCart} className="btn-action btn-delete" style={{ padding: '10px 15px' }}>
-                                🚫 Void Current Active Screen Transaction
+                                Void Current Active Screen Transaction
                             </button>
                         </div>
 
