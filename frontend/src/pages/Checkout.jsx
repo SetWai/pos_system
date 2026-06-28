@@ -5,7 +5,15 @@ import './Checkout.css';
 
 const Checkout = () => {
     const [products, setProducts] = useState([]);
-    const [cart, setCart] = useState([]);
+    const [cart, setCart] = useState(() => {
+        const savedCart = localStorage.getItem('active_pos_cart');
+        return savedCart ? JSON.parse(savedCart) : [];
+    });
+
+    useEffect(() => {
+        localStorage.setItem('active_pos_cart', JSON.stringify(cart));
+    }, [cart]);
+    
     const [barcodeInput, setBarcodeInput] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('CASH'); 
     
@@ -295,7 +303,7 @@ const Checkout = () => {
                             {['7','8','9','4','5','6','1','2','3','0','*'].map(num => (
                                 <button key={num} type="button" onClick={() => handleNumpadClick(num)} className="num-btn">{num}</button>
                             ))}
-                            <button type="button" onClick={handleBackspace} className="del-btn">Del</button>
+                            <button type="button" onClick={handleBackspace} className="del-btn">⌫</button>
                         </div>
                         <button type="submit" className="enter-btn">↵</button>
                     </form>
